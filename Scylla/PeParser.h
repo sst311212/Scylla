@@ -138,6 +138,7 @@ protected:
 	void setNumberOfSections(WORD numberOfSections);
 	
 	void removeIatDirectory();
+	void repairIatDirectory(DWORD_PTR iatAddr, DWORD iatSize);
 	bool getFileOverlay();
 	
 };

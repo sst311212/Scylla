@@ -35,6 +35,8 @@ bool ImportRebuilder::rebuildImportTable(const WCHAR * newFilePath, std::map<DWO
 				alignAllSectionHeaders();
 				fixPeHeader();
 
+				repairIatDirectory(copyModule.begin()->first, sizeOfOFTArray);
+
 				if (newIatInSection)
 				{
 					patchFileForNewIatLocation();

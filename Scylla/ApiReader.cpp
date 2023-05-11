@@ -7,7 +7,7 @@
 #include "StringConversion.h"
 #include "PeParser.h"
 
-stdext::hash_multimap<DWORD_PTR, ApiInfo *> ApiReader::apiList; //api look up table
+std::unordered_multimap<DWORD_PTR, ApiInfo *> ApiReader::apiList; //api look up table
 std::map<DWORD_PTR, ImportModuleThunk> *  ApiReader::moduleThunkList; //store found apis
 
 DWORD_PTR ApiReader::minApiAddress = (DWORD_PTR)-1;
@@ -677,9 +677,88 @@ bool ApiReader::isApiAddressValid(DWORD_PTR virtualAddress)
 	return apiList.count(virtualAddress) > 0;
 }
 
-ApiInfo * ApiReader::getApiByVirtualAddress(DWORD_PTR virtualAddress, bool * isSuspect)
+#include <string>
+using std::string;
+using std::wstring;
+
+ApiInfo * ApiReader::getApiByVirtualAddress(DWORD_PTR virtualAddress, bool* isSuspect)
 {
-	stdext::hash_multimap<DWORD_PTR, ApiInfo *>::iterator it1, it2;
+	auto api = getApiByVirtualAddressInternal(virtualAddress, isSuspect);
+	if (api == nullptr)
+		return nullptr;
+
+	struct APIMapping
+	{
+		const wstring ModuleName;
+		const string APIName;
+		bool SuspectOnly;
+	};
+
+	static const std::map<std::pair<wstring, string>, APIMapping> ApiMap =
+	{
+		{ { _T("NTDLL.DLL"),      "RtlUnwind" },                        { _T("KERNEL32.DLL"), "RtlUnwind", false } },
+		{ { _T("NTDLL.DLL"),      "RtlExitUserProcess" },               { _T("KERNEL32.DLL"), "ExitProcess", false } },
+		{ { _T("NTDLL.DLL"),      "RtlSetLastWin32Error" },             { _T("KERNEL32.DLL"), "SetLastError", false } },
+		{ { _T("NTDLL.DLL"),      "RtlAllocateHeap" },                  { _T("KERNEL32.DLL"), "HeapAlloc", false } },
+		{ { _T("NTDLL.DLL"),      "RtlReAllocateHeap" },                { _T("KERNEL32.DLL"), "HeapReAlloc", false } },
+		{ { _T("NTDLL.DLL"),      "RtlSizeHeap" },                      { _T("KERNEL32.DLL"), "HeapSize", false } },
+		{ { _T("NTDLL.DLL"),      "RtlFreeHeap" },                      { _T("KERNEL32.DLL"), "HeapFree", false } },
+
+		{ { _T("COMBASE.DLL"),    "*" },                                { _T("OLE32.DLL"), "*", false } },
+		{ { _T("KERNELBASE.DLL"), "*" },                                { _T("KERNEL32.DLL"), "*", false } },
+	};
+
+	wstring moduleName = api->module->getFilename();
+	_tcsupr(&moduleName[0]);
+
+	auto key = std::pair<wstring, string>(moduleName, api->name);
+	auto itr = ApiMap.find(key);
+	if (itr != ApiMap.end())
+	{
+		auto& mappedApi = itr->second;
+		if (*isSuspect || !mappedApi.SuspectOnly)
+		{
+			auto newApi = getApiByModuleAndName(mappedApi.ModuleName.c_str(), mappedApi.APIName.c_str());
+			if (newApi != nullptr)
+				return newApi;
+		}
+	}
+
+	// Fallback to wildcard names - these will use the same API name as before, just under a different module.
+	key = std::pair<wstring, string>(moduleName, "*");
+	itr = ApiMap.find(key);
+	if (itr != ApiMap.end())
+	{
+		auto& mappedApi = itr->second;
+		auto newApi = getApiByModuleAndName(mappedApi.ModuleName.c_str(), api->name);
+		if (newApi != nullptr)
+			return newApi;
+	}
+
+	return api;
+}
+
+ApiInfo * ApiReader::getApiByModuleAndName(LPCTSTR moduleName, LPCSTR functionName)
+{
+	for (auto& mod : moduleList)
+	{
+		if (_tcsnicmp(moduleName, mod.getFilename(), MAX_PATH) != 0)
+			continue;
+
+		for (auto api : mod.apiList)
+		{
+			if (strncmp(functionName, api->name, MAX_PATH) == 0)
+				return api;
+		}
+		break;
+	}
+
+	return nullptr;
+}
+
+ApiInfo * ApiReader::getApiByVirtualAddressInternal(DWORD_PTR virtualAddress, bool * isSuspect)
+{
+	std::unordered_multimap<DWORD_PTR, ApiInfo *>::iterator it1, it2;
 	size_t c = 0;
 	size_t countDuplicates = apiList.count(virtualAddress);
 	int countHighPriority = 0;
@@ -762,7 +841,7 @@ ApiInfo * ApiReader::getApiByVirtualAddress(DWORD_PTR virtualAddress, bool * isS
 	return (ApiInfo *) 1; 
 }
 
-ApiInfo * ApiReader::getScoredApi(stdext::hash_multimap<DWORD_PTR, ApiInfo *>::iterator it1,size_t countDuplicates, bool hasName, bool hasUnicodeAnsiName, bool hasNoUnderlineInName, bool hasPrioDll,bool hasPrio0Dll,bool hasPrio1Dll, bool hasPrio2Dll, bool firstWin )
+ApiInfo * ApiReader::getScoredApi(std::unordered_multimap<DWORD_PTR, ApiInfo *>::iterator it1,size_t countDuplicates, bool hasName, bool hasUnicodeAnsiName, bool hasNoUnderlineInName, bool hasPrioDll,bool hasPrio0Dll,bool hasPrio1Dll, bool hasPrio2Dll, bool firstWin )
 {
 	ApiInfo * foundApi = 0;
 	ApiInfo * foundMatchingApi = 0;
@@ -1096,7 +1175,7 @@ void ApiReader::clearAll()
 	minApiAddress = (DWORD_PTR)-1;
 	maxApiAddress = 0;
 
-	for ( stdext::hash_map<DWORD_PTR, ApiInfo *>::iterator it = apiList.begin(); it != apiList.end(); ++it )
+	for ( std::unordered_map<DWORD_PTR, ApiInfo *>::iterator it = apiList.begin(); it != apiList.end(); ++it )
 	{
 		delete it->second;
 	}

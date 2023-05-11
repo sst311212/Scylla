@@ -32,6 +32,10 @@ int InitializeGui(HINSTANCE hInstance, LPARAM param)
 	AtlInitCommonControls(ICC_LISTVIEW_CLASSES | ICC_TREEVIEW_CLASSES);
 
 	Scylla::initAsGuiApp();
+	Scylla::config[DEBUG_PRIVILEGE].setTrue();
+	Scylla::config[IAT_SECTION_NAME].setString(_T(".SCY"));
+	Scylla::config[IAT_FIX_AND_OEP_FIX].setTrue();
+	Scylla::config[USE_ADVANCED_IAT_SEARCH].setTrue();
 
 	IsDllMode = false;
 
@@ -157,7 +161,7 @@ LONG WINAPI HandleUnknownException(struct _EXCEPTION_POINTERS *ExceptionInfo)
 		ExceptionInfo->ContextRecord->Rip
 		);
 #else
-	swprintf_s(registerInfo, _countof(registerInfo),TEXT("eax=0x%p, ebx=0x%p, edx=0x%p, ecx=0x%p, esi=0x%p, edi=0x%p, ebp=0x%p, esp=0x%p, eip=0x%p"),
+	swprintf_s(registerInfo, _countof(registerInfo),"eax=0x" PRINTF_DWORD_PTR_FULL ", ebx=0x" PRINTF_DWORD_PTR_FULL ", edx=0x" PRINTF_DWORD_PTR_FULL ", ecx=0x" PRINTF_DWORD_PTR_FULL ", esi=0x" PRINTF_DWORD_PTR_FULL ", edi=0x" PRINTF_DWORD_PTR_FULL ", ebp=0x" PRINTF_DWORD_PTR_FULL ", esp=0x" PRINTF_DWORD_PTR_FULL ", eip=0x" PRINTF_DWORD_PTR_FULL "",
 		ExceptionInfo->ContextRecord->Eax,
 		ExceptionInfo->ContextRecord->Ebx,
 		ExceptionInfo->ContextRecord->Edx,

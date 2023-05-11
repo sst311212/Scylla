@@ -1,4 +1,5 @@
 
+#include "ImportRebuilder.h"
 #include "PeParser.h"
 #include "ProcessAccessHelp.h"
 #include <algorithm>
@@ -860,7 +861,7 @@ bool PeParser::addNewLastSection(const CHAR * sectionName, DWORD sectionSize, BY
 	peFileSection.sectionHeader.PointerToRawData = alignValue(getSectionHeaderBasedFileSize(), fileAlignment);
 	peFileSection.sectionHeader.VirtualAddress = alignValue(getSectionHeaderBasedSizeOfImage(), sectionAlignment);
 
-	peFileSection.sectionHeader.Characteristics = IMAGE_SCN_MEM_EXECUTE|IMAGE_SCN_MEM_READ|IMAGE_SCN_MEM_WRITE|IMAGE_SCN_CNT_CODE|IMAGE_SCN_CNT_INITIALIZED_DATA;
+	peFileSection.sectionHeader.Characteristics = IMAGE_SCN_MEM_EXECUTE|IMAGE_SCN_MEM_READ|IMAGE_SCN_MEM_WRITE|IMAGE_SCN_CNT_INITIALIZED_DATA;
 
 	peFileSection.normalSize = peFileSection.sectionHeader.SizeOfRawData;
 	peFileSection.dataSize = peFileSection.sectionHeader.SizeOfRawData;
@@ -1032,6 +1033,28 @@ void PeParser::removeIatDirectory()
 				//section must be read and writable
 				listPeSection[i].sectionHeader.Characteristics |= IMAGE_SCN_MEM_READ|IMAGE_SCN_MEM_WRITE;
 			}
+		}
+	}
+}
+
+void PeParser::repairIatDirectory(DWORD_PTR iatAddr, DWORD iatSize)
+{
+	if (isPE32())
+	{
+		pNTHeader32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = iatAddr;
+		pNTHeader32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size = iatSize;
+	}
+	else
+	{
+		pNTHeader64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = iatAddr;
+		pNTHeader64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size = iatSize;
+	}
+
+	for (WORD i = 0; i < getNumberOfSections(); i++)
+	{
+		if ((listPeSection[i].sectionHeader.VirtualAddress <= iatAddr) && ((listPeSection[i].sectionHeader.VirtualAddress + listPeSection[i].sectionHeader.Misc.VirtualSize) > iatAddr))
+		{
+			listPeSection[i].sectionHeader.Characteristics &= ~IMAGE_SCN_MEM_WRITE;
 		}
 	}
 }
