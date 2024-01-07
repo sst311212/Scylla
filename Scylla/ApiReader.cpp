@@ -684,7 +684,7 @@ using std::wstring;
 ApiInfo * ApiReader::getApiByVirtualAddress(DWORD_PTR virtualAddress, bool* isSuspect)
 {
 	auto api = getApiByVirtualAddressInternal(virtualAddress, isSuspect);
-	if (api == nullptr)
+	if (api == nullptr || api == (ApiInfo*)1)
 		return nullptr;
 
 	struct APIMapping
@@ -709,7 +709,7 @@ ApiInfo * ApiReader::getApiByVirtualAddress(DWORD_PTR virtualAddress, bool* isSu
 	};
 
 	wstring moduleName = api->module->getFilename();
-	_tcsupr(&moduleName[0]);
+	_tcsupr_s(&moduleName[0], MAX_PATH);
 
 	auto key = std::pair<wstring, string>(moduleName, api->name);
 	auto itr = ApiMap.find(key);

@@ -149,7 +149,7 @@ LONG WINAPI HandleUnknownException(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	file);
 
 #ifdef _WIN64
-	swprintf_s(registerInfo, _countof(registerInfo),TEXT("rax=0x%p, rbx=0x%p, rdx=0x%p, rcx=0x%p, rsi=0x%p, rdi=0x%p, rbp=0x%p, rsp=0x%p, rip=0x%p"),
+	swprintf_s(registerInfo, _countof(registerInfo),TEXT("rax=0x" PRINTF_DWORD_PTR_FULL ", rbx=0x" PRINTF_DWORD_PTR_FULL ", rdx=0x" PRINTF_DWORD_PTR_FULL ", rcx=0x" PRINTF_DWORD_PTR_FULL ", rsi=0x" PRINTF_DWORD_PTR_FULL ", rdi=0x" PRINTF_DWORD_PTR_FULL ", rbp=0x" PRINTF_DWORD_PTR_FULL ", rsp=0x" PRINTF_DWORD_PTR_FULL ", rip=0x" PRINTF_DWORD_PTR_FULL ""),
 		ExceptionInfo->ContextRecord->Rax,
 		ExceptionInfo->ContextRecord->Rbx,
 		ExceptionInfo->ContextRecord->Rdx,

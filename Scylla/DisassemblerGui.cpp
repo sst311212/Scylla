@@ -199,7 +199,7 @@ bool DisassemblerGui::displayDisassembly()
 
 	for (unsigned int i = 0; i < ProcessAccessHelp::decodedInstructionsCount; i++)
 	{
-		swprintf_s(tempBuffer, PRINTF_DWORD_PTR_FULL,ProcessAccessHelp::decodedInstructions[i].offset);
+		swprintf_s(tempBuffer, PRINTF_DWORD_PTR_FULL, (SIZE_T)ProcessAccessHelp::decodedInstructions[i].offset);
 
 		ListDisassembler.InsertItem(i, tempBuffer);
 

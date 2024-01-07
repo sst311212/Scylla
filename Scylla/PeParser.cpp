@@ -1037,17 +1037,17 @@ void PeParser::removeIatDirectory()
 	}
 }
 
-void PeParser::repairIatDirectory(DWORD_PTR iatAddr, DWORD iatSize)
+void PeParser::repairIatDirectory(DWORD_PTR iatAddr, SIZE_T iatSize)
 {
 	if (isPE32())
 	{
-		pNTHeader32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = iatAddr;
-		pNTHeader32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size = iatSize;
+		pNTHeader32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = *(DWORD*)&iatAddr;
+		pNTHeader32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size = *(DWORD*)&iatSize;
 	}
 	else
 	{
-		pNTHeader64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = iatAddr;
-		pNTHeader64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size = iatSize;
+		pNTHeader64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = *(DWORD*)&iatAddr;
+		pNTHeader64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size = *(DWORD*)&iatSize;
 	}
 
 	for (WORD i = 0; i < getNumberOfSections(); i++)

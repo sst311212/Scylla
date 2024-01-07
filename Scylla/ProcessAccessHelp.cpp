@@ -74,9 +74,10 @@ HANDLE ProcessAccessHelp::NativeOpenProcess(DWORD dwDesiredAccess, DWORD dwProce
 	CLIENT_ID cid = {0};
 	OBJECT_ATTRIBUTES ObjectAttributes;
 	NTSTATUS ntStatus = 0;
+	SIZE_T dwProcessId_L = dwProcessId;
 
 	InitializeObjectAttributes(&ObjectAttributes, 0, 0, 0, 0);
-	cid.UniqueProcess = (HANDLE)dwProcessId;
+	cid.UniqueProcess = *(HANDLE*)&dwProcessId_L;
 
 	ntStatus = NativeWinApi::NtOpenProcess(&hProcess,dwDesiredAccess,&ObjectAttributes, &cid);
 
